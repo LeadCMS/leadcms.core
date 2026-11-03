@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the samples root for full license information.
 // </copyright>
 
+using LeadCMS.Constants;
+
 namespace LeadCMS.Configuration;
 
 public class EntitiesConfig
@@ -230,17 +232,17 @@ public class IdentityConfig
     public int MaxFailedAccessAttempts { get; set; } = 10;
 
     // Password policy configuration
-    public bool RequireDigit { get; set; } = true;
+    public bool RequireDigit { get; set; } = SettingDefaults.RequireDigit;
 
-    public bool RequireUppercase { get; set; } = true;
+    public bool RequireUppercase { get; set; } = SettingDefaults.RequireUppercase;
 
-    public bool RequireLowercase { get; set; } = true;
+    public bool RequireLowercase { get; set; } = SettingDefaults.RequireLowercase;
 
-    public bool RequireNonAlphanumeric { get; set; } = true;
+    public bool RequireNonAlphanumeric { get; set; } = SettingDefaults.RequireNonAlphanumeric;
 
-    public int RequiredLength { get; set; } = 6;
+    public int RequiredLength { get; set; } = SettingDefaults.RequiredLength;
 
-    public int RequiredUniqueChars { get; set; } = 1;
+    public int RequiredUniqueChars { get; set; } = SettingDefaults.RequiredUniqueChars;
 }
 
 public class ContentConfig
@@ -248,32 +250,32 @@ public class ContentConfig
     /// <summary>
     /// Gets or sets the minimum length for Content Title field. Default value of 10 characters.
     /// </summary>
-    public int MinTitleLength { get; set; } = 10;
+    public int MinTitleLength { get; set; } = SettingDefaults.MinTitleLength;
 
     /// <summary>
     /// Gets or sets the maximum length for Content Title field. Default value of 60 characters is SEO-optimized for page titles.
     /// </summary>
-    public int MaxTitleLength { get; set; } = 60;
+    public int MaxTitleLength { get; set; } = SettingDefaults.MaxTitleLength;
 
     /// <summary>
     /// Gets or sets the minimum length for Content Description field. Default value of 20 characters.
     /// </summary>
-    public int MinDescriptionLength { get; set; } = 20;
+    public int MinDescriptionLength { get; set; } = SettingDefaults.MinDescriptionLength;
 
     /// <summary>
     /// Gets or sets the maximum length for Content Description field. Default value of 155 characters is SEO-optimized for meta descriptions.
     /// </summary>
-    public int MaxDescriptionLength { get; set; } = 155;
+    public int MaxDescriptionLength { get; set; } = SettingDefaults.MaxDescriptionLength;
 
     /// <summary>
     /// Gets or sets a value indicating whether real-time MDX/JSON format validation is enabled for content records in the admin UI. Default value of true enables validation.
     /// </summary>
-    public bool EnableRealtimeSyntaxValidation { get; set; } = true;
+    public bool EnableRealtimeSyntaxValidation { get; set; } = SettingDefaults.EnableRealtimeSyntaxValidation;
 
     /// <summary>
     /// Gets or sets a value indicating whether line numbers are enabled in the code editor for content records in the admin UI. Default value of true enables line numbers.
     /// </summary>
-    public bool EnableCodeEditorLineNumbers { get; set; } = true;
+    public bool EnableCodeEditorLineNumbers { get; set; } = SettingDefaults.EnableCodeEditorLineNumbers;
 }
 
 public class SiteLinksConfig

@@ -80,7 +80,7 @@ Media optimization is controlled through system settings accessed via the `ISett
 | `MediaPreferredFormat`    | `avif`        | Target image format for optimization                                                                            |
 | `MediaEnableOptimisation` | `false`       | Enable/disable automatic optimization on upload (manual optimization via `/optimize` endpoint always works)     |
 | `MediaQuality`            | `75`          | Image quality level (1-100, higher = better quality but larger file size)                                       |
-| `MediaCoverDimensions`    | `512x256`     | Specific dimensions for cover images (format: `{width}x{height}`)                                               |
+| `MediaCoverDimensions`    | _(empty)_     | Specific dimensions for cover images (format: `{width}x{height}`). Empty means cover images are not cropped     |
 | `MediaEnableCoverResize`  | `true`        | Enable/disable automatic resize/crop for cover images. When disabled, cover images are treated as normal images |     |
 
 ### Supported Image Formats

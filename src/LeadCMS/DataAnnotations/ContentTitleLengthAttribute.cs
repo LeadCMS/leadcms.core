@@ -34,8 +34,8 @@ public class ContentTitleLengthAttribute : ValidationAttribute
 
     private (int minLength, int maxLength) GetMinMaxLength(ValidationContext validationContext)
     {
-        int minLength = 10; // Default minimum
-        int maxLength = 60; // Default maximum (SEO-optimized)
+        int minLength = SettingDefaults.MinTitleLength;
+        int maxLength = SettingDefaults.MaxTitleLength;
 
         var settingService = validationContext.GetService(typeof(ISettingService)) as ISettingService;
         if (settingService != null)

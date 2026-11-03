@@ -56,22 +56,22 @@ public class LeadNotificationService : ILeadNotificationService
 
         var tasks = new List<Task>();
 
-        // Send email notification (default: enabled)
-        var emailEnabled = SettingListHelper.GetBool(settings, LeadCaptureSettingKeys.EmailEnabled, defaultValue: true);
+        // Send email notification
+        var emailEnabled = SettingListHelper.GetBool(settings, LeadCaptureSettingKeys.EmailEnabled, LeadCaptureSettingDefaults.EmailEnabled);
         if (emailEnabled)
         {
             tasks.Add(SendEmailNotificationAsync(leadInfo, settings));
         }
 
-        // Send Telegram notification (default: disabled)
-        var telegramEnabled = SettingListHelper.GetBool(settings, LeadCaptureSettingKeys.TelegramEnabled, defaultValue: false);
+        // Send Telegram notification
+        var telegramEnabled = SettingListHelper.GetBool(settings, LeadCaptureSettingKeys.TelegramEnabled, LeadCaptureSettingDefaults.TelegramEnabled);
         if (telegramEnabled)
         {
             tasks.Add(SendTelegramNotificationAsync(leadInfo, settings));
         }
 
-        // Send Slack notification (default: disabled)
-        var slackEnabled = SettingListHelper.GetBool(settings, LeadCaptureSettingKeys.SlackEnabled, defaultValue: false);
+        // Send Slack notification
+        var slackEnabled = SettingListHelper.GetBool(settings, LeadCaptureSettingKeys.SlackEnabled, LeadCaptureSettingDefaults.SlackEnabled);
         if (slackEnabled)
         {
             tasks.Add(SendSlackNotificationAsync(leadInfo, settings));
@@ -140,7 +140,7 @@ public class LeadNotificationService : ILeadNotificationService
     /// <inheritdoc/>
     public async Task SendTelegramNotificationAsync(LeadNotificationInfo leadInfo, List<Setting> settings)
     {
-        var telegramEnabled = SettingListHelper.GetBool(settings, LeadCaptureSettingKeys.TelegramEnabled, defaultValue: false);
+        var telegramEnabled = SettingListHelper.GetBool(settings, LeadCaptureSettingKeys.TelegramEnabled, LeadCaptureSettingDefaults.TelegramEnabled);
         if (!telegramEnabled)
         {
             logger.LogInformation("Telegram notifications are disabled. Lead notification will not be sent to Telegram.");

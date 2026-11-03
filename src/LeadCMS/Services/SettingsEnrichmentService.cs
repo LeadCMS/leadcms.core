@@ -5,6 +5,7 @@
 using System.Text.Json;
 using LeadCMS.Constants;
 using LeadCMS.Entities;
+using LeadCMS.Helpers;
 using LeadCMS.Interfaces;
 
 namespace LeadCMS.Services;
@@ -26,12 +27,7 @@ public class SettingsEnrichmentService : ISettingsEnrichmentService
     {
         this.settingService = settingService;
         this.configuration = configuration;
-        settingDefinitions = settingsProviders
-            .SelectMany(p => p.GetSettingDefinitions())
-            .GroupBy(d => d.Key)
-            .Select(g => g.First())
-            .ToList()
-            .AsReadOnly();
+        settingDefinitions = SettingDefinitionHelper.Merge(settingsProviders);
     }
 
     /// <summary>
@@ -42,17 +38,19 @@ public class SettingsEnrichmentService : ISettingsEnrichmentService
     /// <param name="userId">Optional user ID for user-level settings.</param>
     public async Task EnrichWithContentValidationSettingsAsync(List<Setting> settings, string? userId = null)
     {
-        var minTitleLength = await settingService.GetIntSettingWithFallbackAsync(SettingKeys.MinTitleLength, 10, userId);
-        var maxTitleLength = await settingService.GetIntSettingWithFallbackAsync(SettingKeys.MaxTitleLength, 60, userId);
-        var minDescriptionLength = await settingService.GetIntSettingWithFallbackAsync(SettingKeys.MinDescriptionLength, 20, userId);
-        var maxDescriptionLength = await settingService.GetIntSettingWithFallbackAsync(SettingKeys.MaxDescriptionLength, 155, userId);
-        var enableRealtimeSyntaxValidation = await settingService.GetBoolSettingWithFallbackAsync(SettingKeys.EnableRealtimeSyntaxValidation, true, userId);
+        var minTitleLength = await settingService.GetIntSettingWithFallbackAsync(SettingKeys.MinTitleLength, SettingDefaults.MinTitleLength, userId);
+        var maxTitleLength = await settingService.GetIntSettingWithFallbackAsync(SettingKeys.MaxTitleLength, SettingDefaults.MaxTitleLength, userId);
+        var minDescriptionLength = await settingService.GetIntSettingWithFallbackAsync(SettingKeys.MinDescriptionLength, SettingDefaults.MinDescriptionLength, userId);
+        var maxDescriptionLength = await settingService.GetIntSettingWithFallbackAsync(SettingKeys.MaxDescriptionLength, SettingDefaults.MaxDescriptionLength, userId);
+        var enableRealtimeSyntaxValidation = await settingService.GetBoolSettingWithFallbackAsync(SettingKeys.EnableRealtimeSyntaxValidation, SettingDefaults.EnableRealtimeSyntaxValidation, userId);
+        var enableCodeEditorLineNumbers = await settingService.GetBoolSettingWithFallbackAsync(SettingKeys.EnableCodeEditorLineNumbers, SettingDefaults.EnableCodeEditorLineNumbers, userId);
 
         SetSettingIfNullOrEmpty(settings, SettingKeys.MinTitleLength, minTitleLength.ToString());
         SetSettingIfNullOrEmpty(settings, SettingKeys.MaxTitleLength, maxTitleLength.ToString());
         SetSettingIfNullOrEmpty(settings, SettingKeys.MinDescriptionLength, minDescriptionLength.ToString());
         SetSettingIfNullOrEmpty(settings, SettingKeys.MaxDescriptionLength, maxDescriptionLength.ToString());
-        SetSettingIfNullOrEmpty(settings, SettingKeys.EnableRealtimeSyntaxValidation, enableRealtimeSyntaxValidation.ToString().ToLower());
+        SetSettingIfNullOrEmpty(settings, SettingKeys.EnableRealtimeSyntaxValidation, SettingDefaults.ToSettingValue(enableRealtimeSyntaxValidation));
+        SetSettingIfNullOrEmpty(settings, SettingKeys.EnableCodeEditorLineNumbers, SettingDefaults.ToSettingValue(enableCodeEditorLineNumbers));
     }
 
     /// <summary>
@@ -63,17 +61,17 @@ public class SettingsEnrichmentService : ISettingsEnrichmentService
     /// <param name="userId">Optional user ID for user-level settings.</param>
     public async Task EnrichWithIdentitySettingsAsync(List<Setting> settings, string? userId = null)
     {
-        var requireDigit = await settingService.GetBoolSettingWithFallbackAsync(SettingKeys.RequireDigit, userId == null, userId);
-        var requireUppercase = await settingService.GetBoolSettingWithFallbackAsync(SettingKeys.RequireUppercase, userId == null, userId);
-        var requireLowercase = await settingService.GetBoolSettingWithFallbackAsync(SettingKeys.RequireLowercase, true, userId);
-        var requireNonAlphanumeric = await settingService.GetBoolSettingWithFallbackAsync(SettingKeys.RequireNonAlphanumeric, userId == null, userId);
-        var requiredLength = await settingService.GetIntSettingWithFallbackAsync(SettingKeys.RequiredLength, 6, userId);
-        var requiredUniqueChars = await settingService.GetIntSettingWithFallbackAsync(SettingKeys.RequiredUniqueChars, 1, userId);
+        var requireDigit = await settingService.GetBoolSettingWithFallbackAsync(SettingKeys.RequireDigit, userId == null && SettingDefaults.RequireDigit, userId);
+        var requireUppercase = await settingService.GetBoolSettingWithFallbackAsync(SettingKeys.RequireUppercase, userId == null && SettingDefaults.RequireUppercase, userId);
+        var requireLowercase = await settingService.GetBoolSettingWithFallbackAsync(SettingKeys.RequireLowercase, SettingDefaults.RequireLowercase, userId);
+        var requireNonAlphanumeric = await settingService.GetBoolSettingWithFallbackAsync(SettingKeys.RequireNonAlphanumeric, userId == null && SettingDefaults.RequireNonAlphanumeric, userId);
+        var requiredLength = await settingService.GetIntSettingWithFallbackAsync(SettingKeys.RequiredLength, SettingDefaults.RequiredLength, userId);
+        var requiredUniqueChars = await settingService.GetIntSettingWithFallbackAsync(SettingKeys.RequiredUniqueChars, SettingDefaults.RequiredUniqueChars, userId);
 
-        SetSettingIfNullOrEmpty(settings, SettingKeys.RequireDigit, requireDigit.ToString().ToLower());
-        SetSettingIfNullOrEmpty(settings, SettingKeys.RequireUppercase, requireUppercase.ToString().ToLower());
-        SetSettingIfNullOrEmpty(settings, SettingKeys.RequireLowercase, requireLowercase.ToString().ToLower());
-        SetSettingIfNullOrEmpty(settings, SettingKeys.RequireNonAlphanumeric, requireNonAlphanumeric.ToString().ToLower());
+        SetSettingIfNullOrEmpty(settings, SettingKeys.RequireDigit, SettingDefaults.ToSettingValue(requireDigit));
+        SetSettingIfNullOrEmpty(settings, SettingKeys.RequireUppercase, SettingDefaults.ToSettingValue(requireUppercase));
+        SetSettingIfNullOrEmpty(settings, SettingKeys.RequireLowercase, SettingDefaults.ToSettingValue(requireLowercase));
+        SetSettingIfNullOrEmpty(settings, SettingKeys.RequireNonAlphanumeric, SettingDefaults.ToSettingValue(requireNonAlphanumeric));
         SetSettingIfNullOrEmpty(settings, SettingKeys.RequiredLength, requiredLength.ToString());
         SetSettingIfNullOrEmpty(settings, SettingKeys.RequiredUniqueChars, requiredUniqueChars.ToString());
     }
@@ -152,31 +150,26 @@ public class SettingsEnrichmentService : ISettingsEnrichmentService
     /// <param name="userId">Optional user ID for user-level settings.</param>
     public async Task EnrichWithMediaSettingsAsync(List<Setting> settings, string? userId = null)
     {
-        var maxDimensions = await settingService.GetSettingWithFallbackAsync(
-            SettingKeys.MediaMaxDimensions,
-            ConfigurationPaths.GetConfigurationPath(SettingKeys.MediaMaxDimensions),
-            userId);
-        var coverDimensions = await settingService.GetSettingWithFallbackAsync(
-            SettingKeys.MediaCoverDimensions,
-            ConfigurationPaths.GetConfigurationPath(SettingKeys.MediaCoverDimensions),
-            userId);
-        var preferredFormat = await settingService.GetSettingWithFallbackAsync(
-            SettingKeys.MediaPreferredFormat,
-            ConfigurationPaths.GetConfigurationPath(SettingKeys.MediaPreferredFormat),
-            userId);
+        var maxDimensions = await settingService.GetMaxDimensionsAsync(userId);
+        var coverDimensions = await settingService.GetCoverDimensionsAsync(userId);
+        var preferredFormat = await settingService.GetPreferredFormatAsync(userId);
 
         var maxFileSizeInKb = GetDefaultMediaMaxFileSize();
 
-        var enableOptimisationConfig = configuration["Media:EnableOptimisation"] ?? "false";
-        var enableOptimisation = bool.TryParse(enableOptimisationConfig, out var result) && result;
+        var enableOptimisation = await settingService.GetBoolSettingWithFallbackAsync(
+            SettingKeys.MediaEnableOptimisation,
+            SettingDefaults.MediaEnableOptimisation,
+            userId);
+        var quality = await settingService.GetMediaQualityAsync(userId);
+        var enableCoverResize = await settingService.IsCoverResizeEnabledAsync(userId);
 
-        SetSettingIfNullOrEmpty(settings, SettingKeys.MediaMaxDimensions, string.IsNullOrWhiteSpace(maxDimensions) ? "1024x1024" : maxDimensions!);
-        SetSettingIfNullOrEmpty(settings, SettingKeys.MediaCoverDimensions, string.IsNullOrWhiteSpace(coverDimensions) ? "512x256" : coverDimensions!);
-        SetSettingIfNullOrEmpty(settings, SettingKeys.MediaPreferredFormat, string.IsNullOrWhiteSpace(preferredFormat) ? "avif" : preferredFormat!);
+        SetSettingIfNullOrEmpty(settings, SettingKeys.MediaMaxDimensions, maxDimensions);
+        SetSettingIfNullOrEmpty(settings, SettingKeys.MediaCoverDimensions, coverDimensions);
+        SetSettingIfNullOrEmpty(settings, SettingKeys.MediaPreferredFormat, preferredFormat);
         SetSettingIfNullOrEmpty(settings, SettingKeys.MediaMaxFileSize, maxFileSizeInKb.ToString());
-        SetSettingIfNullOrEmpty(settings, SettingKeys.MediaEnableOptimisation, enableOptimisation.ToString().ToLower());
-        SetSettingIfNullOrEmpty(settings, SettingKeys.MediaQuality, "75");
-        SetSettingIfNullOrEmpty(settings, SettingKeys.MediaEnableCoverResize, "false");
+        SetSettingIfNullOrEmpty(settings, SettingKeys.MediaEnableOptimisation, SettingDefaults.ToSettingValue(enableOptimisation));
+        SetSettingIfNullOrEmpty(settings, SettingKeys.MediaQuality, quality.ToString());
+        SetSettingIfNullOrEmpty(settings, SettingKeys.MediaEnableCoverResize, SettingDefaults.ToSettingValue(enableCoverResize));
     }
 
     /// <summary>
@@ -195,7 +188,10 @@ public class SettingsEnrichmentService : ISettingsEnrichmentService
 
         if (!hasValue)
         {
-            var contactUsTo = configuration.GetSection("ContactUs:To").Get<string[]>();
+            // Skip unresolved "$ENV" placeholders the same way LeadNotificationService does
+            var contactUsTo = configuration.GetSection("ContactUs:To").Get<string[]>()?
+                .Where(e => !string.IsNullOrEmpty(e) && !e.StartsWith('$'))
+                .ToArray();
             if (contactUsTo != null && contactUsTo.Length > 0)
             {
                 if (existing != null)
@@ -265,7 +261,7 @@ public class SettingsEnrichmentService : ISettingsEnrichmentService
     {
         if (string.IsNullOrWhiteSpace(sizeString))
         {
-            return 500; // Default 500KB
+            return SettingDefaults.MediaMaxFileSizeInKb;
         }
 
         sizeString = sizeString.Trim().ToUpperInvariant();
@@ -280,7 +276,7 @@ public class SettingsEnrichmentService : ISettingsEnrichmentService
         var numberPart = System.Text.RegularExpressions.Regex.Match(sizeString, @"[\d.]+").Value;
         if (!double.TryParse(numberPart, System.Globalization.CultureInfo.InvariantCulture, out var number))
         {
-            return 500; // Default 500KB
+            return SettingDefaults.MediaMaxFileSizeInKb;
         }
 
         var unit = sizeString.Substring(numberPart.Length).Trim();
@@ -328,7 +324,7 @@ public class SettingsEnrichmentService : ISettingsEnrichmentService
             return ConvertToKilobytes(defaultEntry["MaxSize"]!);
         }
 
-        // Fallback: 500KB default
-        return 500;
+        // Fallback: built-in default
+        return SettingDefaults.MediaMaxFileSizeInKb;
     }
 }
