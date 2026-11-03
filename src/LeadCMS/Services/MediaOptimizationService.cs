@@ -183,12 +183,7 @@ public class MediaOptimizationService : IMediaOptimizationService
 
     private static MagickFormat ResolveMagickFormat(string format)
     {
-        var supported = MagickNET.SupportedFormats
-            .Where(item => item.SupportsWriting)
-            .Select(item => item.Format)
-            .ToHashSet();
-
-        if (Enum.TryParse<MagickFormat>(format, true, out var magickFormat) && supported.Contains(magickFormat))
+        if (Enum.TryParse<MagickFormat>(format, true, out var magickFormat) && MediaSettingsHelper.WritableFormats.Contains(magickFormat))
         {
             return magickFormat;
         }

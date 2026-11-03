@@ -54,7 +54,7 @@ public static class KnownSettingMetadata
         new(SettingKeys.MediaMaxFileSize, false, SettingValueTypes.Int, "Maximum media file size in KB."),
         new(SettingKeys.MediaEnableOptimisation, false, SettingValueTypes.Bool, "Enable media optimization pipeline."),
         new(SettingKeys.MediaQuality, false, SettingValueTypes.Int, "Default output quality for optimized media."),
-        new(SettingKeys.MediaEnableCoverResize, false, SettingValueTypes.Bool, "Enable cover image resize to configured cover dimensions."),
+        new(SettingKeys.MediaEnableCoverResize, false, SettingValueTypes.Bool, "Resize uploaded cover images to the configured cover dimensions. AI-generated covers always follow the configured dimensions."),
 
         new("ApiSettings.MaxListSize", false, SettingValueTypes.Int, "Maximum number of records returned by list endpoints."),
         new("ApiSettings.DefaultFromEmail", false, SettingValueTypes.Text, "Default sender email address used for system-generated emails."),
