@@ -23,6 +23,22 @@ namespace LeadCMS.Controllers;
 [Route("api/[controller]")]
 public class ContactsController : BaseControllerWithImport<Contact, ContactCreateDto, ContactUpdateDto, ContactDetailsDto, ContactImportDto>
 {
+    /// <summary>
+    /// The contact fields a pending update can be accepted into. These are the fields that
+    /// <see cref="ContactMergeHelper.ApplyPublicUpdate"/> records.
+    /// </summary>
+    private static readonly Dictionary<string, Action<Contact, string>> PendingUpdateSetters =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            [nameof(Contact.FirstName)] = (c, v) => c.FirstName = v,
+            [nameof(Contact.MiddleName)] = (c, v) => c.MiddleName = v,
+            [nameof(Contact.LastName)] = (c, v) => c.LastName = v,
+            [nameof(Contact.CompanyName)] = (c, v) => c.CompanyName = v,
+            [nameof(Contact.Phone)] = (c, v) => c.Phone = v,
+            [nameof(Contact.PhoneRaw)] = (c, v) => c.PhoneRaw = v,
+            [nameof(Contact.Source)] = (c, v) => c.Source = v,
+        };
+
     private readonly IContactService contactService;
     private readonly IContactEmailCommunicationService contactEmailCommunicationService;
     private readonly CommentableControllerExtension commentableControllerExtension;
@@ -148,6 +164,43 @@ public class ContactsController : BaseControllerWithImport<Contact, ContactCreat
         return Ok(returnedValue);
     }
 
+    /// <summary>
+    /// Accepts a pending update: writes its proposed value into the contact field and removes the record.
+    /// </summary>
+    /// <param name="id">The contact identifier.</param>
+    /// <param name="value">The field and creation timestamp identifying the pending update.</param>
+    /// <returns>The updated contact.</returns>
+    [HttpPost("{id}/pending-updates/accept")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<ContactDetailsDto>> AcceptPendingUpdate(int id, [FromBody] PendingContactUpdateDecisionDto value)
+    {
+        return await DecidePendingUpdate(id, value, accept: true);
+    }
+
+    /// <summary>
+    /// Rejects a pending update: removes the record and leaves the contact field unchanged.
+    /// </summary>
+    /// <param name="id">The contact identifier.</param>
+    /// <param name="value">The field and creation timestamp identifying the pending update.</param>
+    /// <returns>The updated contact.</returns>
+    [HttpPost("{id}/pending-updates/reject")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<ContactDetailsDto>> RejectPendingUpdate(int id, [FromBody] PendingContactUpdateDecisionDto value)
+    {
+        return await DecidePendingUpdate(id, value, accept: false);
+    }
+
     [HttpGet("{id}/email-communications")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -244,6 +297,19 @@ public class ContactsController : BaseControllerWithImport<Contact, ContactCreat
     protected override async Task SaveRangeAsync(List<Contact> newRecords)
     {
         await contactService.SaveRangeAsync(newRecords);
+    }
+
+    private static bool SameInstant(DateTime left, DateTime right)
+    {
+        // Timestamps are compared in UTC at millisecond precision: the value may have passed through
+        // a client with millisecond resolution, and a value without an offset is taken as UTC.
+        static long Milliseconds(DateTime value)
+        {
+            var utc = value.Kind == DateTimeKind.Local ? value.ToUniversalTime() : value;
+            return utc.Ticks / TimeSpan.TicksPerMillisecond;
+        }
+
+        return Milliseconds(left) == Milliseconds(right);
     }
 
     private async Task<TResult> ExecuteWithSegmentFilterAsync<TResult>(Func<Task<TResult>> action)
@@ -374,5 +440,55 @@ public class ContactsController : BaseControllerWithImport<Contact, ContactCreat
         }
 
         return parameters.Count > 0;
+    }
+
+    private async Task<ActionResult<ContactDetailsDto>> DecidePendingUpdate(int id, PendingContactUpdateDecisionDto value, bool accept)
+    {
+        var contact = await dbContext.Contacts!.FirstOrDefaultAsync(c => c.Id == id);
+
+        if (contact == null)
+        {
+            throw new EntityNotFoundException("Contact", id.ToString());
+        }
+
+        Action<Contact, string>? apply = null;
+
+        if (accept && !PendingUpdateSetters.TryGetValue(value.Field, out apply))
+        {
+            throw new BadRequestException($"Pending update of field '{value.Field}' cannot be accepted.");
+        }
+
+        var pending = contact.PendingUpdates?.FirstOrDefault(
+            p => string.Equals(p.Field, value.Field, StringComparison.OrdinalIgnoreCase));
+
+        if (pending == null)
+        {
+            throw new NotFoundHttpException($"Contact {id} has no pending update of field '{value.Field}'.");
+        }
+
+        if (!SameInstant(pending.CreatedAt, value.CreatedAt!.Value))
+        {
+            throw new ConflictException($"The pending update of field '{value.Field}' has been replaced by a newer one.");
+        }
+
+        if (accept)
+        {
+            if (string.IsNullOrWhiteSpace(pending.ProposedValue))
+            {
+                throw new UnprocessableEntityException($"The pending update of field '{value.Field}' has no proposed value.");
+            }
+
+            apply!(contact, pending.ProposedValue);
+        }
+
+        // A new list instance, so the JSONB column is persisted regardless of in-place change tracking.
+        contact.PendingUpdates = contact.PendingUpdates!.Where(p => !ReferenceEquals(p, pending)).ToList();
+
+        // The same save path as PATCH: phone normalisation and domain enrichment.
+        await contactService.SaveAsync(contact);
+
+        await dbContext.SaveChangesAsync();
+
+        return Ok(mapper.Map<ContactDetailsDto>(contact));
     }
 }
