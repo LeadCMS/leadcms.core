@@ -143,6 +143,7 @@ public class AutoMapperProfiles : Profile
         CreateMap<Deal, DealUpdateDto>()
             .ForAllMembers(m => m.Condition(PropertyNeedsMapping));
         CreateMap<Deal, DealDetailsDto>()
+            .ForMember(d => d.PipelineStage, o => o.MapFrom(s => s.DealPipelineStage))
             .ForAllMembers(m => m.Condition(PropertyNeedsMapping));
 
         CreateMap<PromotionCreateDto, Promotion>().ReverseMap();

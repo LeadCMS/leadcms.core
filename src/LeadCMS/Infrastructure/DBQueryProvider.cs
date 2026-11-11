@@ -416,7 +416,7 @@ namespace LeadCMS.Infrastructure
                 }
             }
 
-            if (typeof(T) == typeof(Contact) && cmd.PropertyPath.ContainsCollectionNavigation)
+            if (QueryModelBuilder<T>.AllowsCollectionNavigationFilters && cmd.PropertyPath.ContainsCollectionNavigation)
             {
                 return BuildCollectionNavigationWhereExpression(expressionParameter, cmd.PropertyPath.Properties, 0, cmd);
             }

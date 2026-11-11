@@ -88,5 +88,8 @@ public class DealDetailsDto : DealBaseDto
     public DealPipelineStageDetailsDto? PipelineStage { get; set; }
 
     [Ignore]
+    public UserDetailsDto? CreatedBy { get; set; }
+
+    [Ignore]
     public List<ContactDetailsDto>? Contacts { get; set; }
 }
