@@ -259,3 +259,23 @@ public class ContactImportDto : BaseImportDto
     [Optional]
     public string[]? Tags { get; set; }
 }
+
+/// <summary>
+/// Identifies a pending contact update to accept or reject.
+/// </summary>
+public class PendingContactUpdateDecisionDto
+{
+    /// <summary>
+    /// Gets or sets the canonical field name of the pending update (e.g. "FirstName").
+    /// </summary>
+    [Required]
+    public string Field { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the creation timestamp of the pending update as returned in
+    /// <see cref="ContactDetailsDto.PendingUpdates"/>. It guards against deciding on a record that
+    /// has been replaced by a newer submission in the meantime.
+    /// </summary>
+    [Required]
+    public DateTime? CreatedAt { get; set; }
+}
