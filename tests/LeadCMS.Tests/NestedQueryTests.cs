@@ -96,6 +96,14 @@ public class NestedQueryTests : BaseTestAutoLogin
     }
 
     [Fact]
+    public async Task FilterByCollectionNavigationNotSupportedForOtherEntities()
+    {
+        var response = await GetRequest($"{AccountsUrl}?filter[where][contacts.id][eq]=1");
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
     public async Task OrderContactsByAccountNameDescending()
     {
         // Arrange: Create accounts and contacts

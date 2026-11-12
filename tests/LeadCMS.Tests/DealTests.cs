@@ -5,6 +5,7 @@
 using System.Security.Authentication;
 using LeadCMS.Helpers;
 using LeadCMS.Tests.TestEntities;
+using Microsoft.EntityFrameworkCore;
 
 namespace LeadCMS.Tests;
 
@@ -80,6 +81,54 @@ public class DealTests : SimpleTableTests<Deal, TestDeal, DealUpdateDto, IDealSe
         // failed patching
         dealUpdate = new DealUpdateDto() { ContactIds = new HashSet<int>() { existedContactsIds.Max() + 1 } };
         await PatchTest(url, dealUpdate, HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task IncludePipelineStage()
+    {
+        var fkData = await CreateFKItems(new List<TestContact>());
+        var deal = new TestDeal(string.Empty, fkData.ContactIds, fkData.AccountId, fkData.PipelineId, fkData.UserId);
+        await PostTest(itemsUrl, deal);
+
+        var expectedStageName = App.GetDbContext()!.Deals!.Include(d => d.DealPipelineStage).Single().DealPipelineStage!.Name;
+
+        var withInclude = await GetTest<List<DealDetailsDto>>($"{itemsUrl}?filter[include]=dealPipelineStage", HttpStatusCode.OK);
+        withInclude!.Single().PipelineStage.Should().NotBeNull();
+        withInclude!.Single().PipelineStage!.Name.Should().Be(expectedStageName);
+
+        var withoutInclude = await GetTest<List<DealDetailsDto>>(itemsUrl, HttpStatusCode.OK);
+        withoutInclude!.Single().PipelineStage.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task IncludeOwner()
+    {
+        var fkData = await CreateFKItems(new List<TestContact>());
+        var deal = new TestDeal(string.Empty, fkData.ContactIds, fkData.AccountId, fkData.PipelineId, fkData.UserId);
+        await PostTest(itemsUrl, deal);
+
+        var withInclude = await GetTest<List<DealDetailsDto>>($"{itemsUrl}?filter[include]=createdBy", HttpStatusCode.OK);
+        withInclude!.Single().CreatedBy.Should().NotBeNull();
+        withInclude!.Single().CreatedBy!.Id.Should().Be(fkData.UserId);
+
+        var withoutInclude = await GetTest<List<DealDetailsDto>>(itemsUrl, HttpStatusCode.OK);
+        withoutInclude!.Single().CreatedBy.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task FilterDealsByContactId()
+    {
+        var fkData = await CreateFKItems(new List<TestContact>() { new TestContact("1"), new TestContact("2") });
+        var firstContactId = fkData.ContactIds.First();
+        var secondContactId = fkData.ContactIds.Last();
+
+        await PostTest(itemsUrl, new TestDeal(string.Empty, new HashSet<int>() { firstContactId }, fkData.AccountId, fkData.PipelineId, fkData.UserId));
+        await PostTest(itemsUrl, new TestDeal(string.Empty, new HashSet<int>() { secondContactId }, fkData.AccountId, fkData.PipelineId, fkData.UserId));
+
+        var deals = await GetTest<List<DealDetailsDto>>($"{itemsUrl}?filter[where][contacts.id][eq]={firstContactId}", HttpStatusCode.OK);
+
+        deals!.Count.Should().Be(1);
+        deals[0].Contacts!.Select(c => c.Id).Should().BeEquivalentTo(new[] { firstContactId });
     }
 
     protected override async Task<(TestDeal, string)> CreateItem()

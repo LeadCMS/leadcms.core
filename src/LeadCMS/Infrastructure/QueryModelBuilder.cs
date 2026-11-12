@@ -49,6 +49,11 @@ namespace LeadCMS.Infrastructure
     {
         private readonly PgDbContext dbContext;
 
+        /// <summary>
+        /// Gets a value indicating whether where filters on <typeparamref name="T"/> may go through collection navigations, e.g. "contacts.id".
+        /// </summary>
+        internal static bool AllowsCollectionNavigationFilters => typeof(T) == typeof(Contact) || typeof(T) == typeof(Deal);
+
         private static PropertyPath ParsePropertyPath(string propertyName, QueryCommand cmd, bool allowCollectionNavigations)
         {
             var parts = propertyName.Split('.');
@@ -608,7 +613,7 @@ namespace LeadCMS.Infrastructure
                 return QueryModelBuilder<T>.ParsePropertyPath(
                     propertyName,
                     cmd,
-                    allowCollectionNavigations: typeof(T) == typeof(Contact));
+                    allowCollectionNavigations: AllowsCollectionNavigationFilters);
             }
 
             public enum ContainsType
