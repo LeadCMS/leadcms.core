@@ -4,6 +4,7 @@
 
 using System.Security.Cryptography;
 using LeadCMS.Configuration;
+using LeadCMS.Constants;
 
 namespace LeadCMS.Helpers
 {
@@ -19,11 +20,11 @@ namespace LeadCMS.Helpers
         public static string GenerateStrongPassword(IdentityConfig? config = null, int? length = null)
         {
             // Use provided config or fall back to defaults
-            var requireDigit = config?.RequireDigit ?? true;
-            var requireUppercase = config?.RequireUppercase ?? true;
-            var requireLowercase = config?.RequireLowercase ?? true;
-            var requireNonAlphanumeric = config?.RequireNonAlphanumeric ?? true;
-            var requiredLength = Math.Max(length ?? 16, config?.RequiredLength ?? 6);
+            var requireDigit = config?.RequireDigit ?? SettingDefaults.RequireDigit;
+            var requireUppercase = config?.RequireUppercase ?? SettingDefaults.RequireUppercase;
+            var requireLowercase = config?.RequireLowercase ?? SettingDefaults.RequireLowercase;
+            var requireNonAlphanumeric = config?.RequireNonAlphanumeric ?? SettingDefaults.RequireNonAlphanumeric;
+            var requiredLength = Math.Max(length ?? 16, config?.RequiredLength ?? SettingDefaults.RequiredLength);
 
             // Calculate minimum required characters
             var requiredCharTypes = 0;

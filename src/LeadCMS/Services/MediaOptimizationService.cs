@@ -12,11 +12,6 @@ namespace LeadCMS.Services;
 
 public class MediaOptimizationService : IMediaOptimizationService
 {
-    private const int DefaultMaxWidth = 2048;
-    private const int DefaultMaxHeight = 2048;
-    private const string DefaultPreferredFormat = "avif";
-    private const int DefaultQuality = 75;
-
     private readonly ISettingService settingService;
     private readonly ILogger<MediaOptimizationService> logger;
 
@@ -28,37 +23,19 @@ public class MediaOptimizationService : IMediaOptimizationService
 
     public async Task<MediaOptimizationSettings> GetSettingsAsync(CancellationToken cancellationToken = default)
     {
-        var maxDimensions = await settingService.GetSettingWithFallbackAsync(
-            SettingKeys.MediaMaxDimensions,
-            ConfigurationPaths.GetConfigurationPath(SettingKeys.MediaMaxDimensions));
-        var preferredFormat = await settingService.GetSettingWithFallbackAsync(
-            SettingKeys.MediaPreferredFormat,
-            ConfigurationPaths.GetConfigurationPath(SettingKeys.MediaPreferredFormat));
+        var maxDimensions = await settingService.GetMaxDimensionsAsync();
+        var preferredFormat = await settingService.GetPreferredFormatAsync();
         var enableOptimisation = await settingService.GetBoolSettingWithFallbackAsync(
             SettingKeys.MediaEnableOptimisation,
-            false);
-        var quality = await settingService.GetSettingWithFallbackAsync(
-            SettingKeys.MediaQuality,
-            ConfigurationPaths.GetConfigurationPath(SettingKeys.MediaQuality));
-
-        var formatValue = string.IsNullOrWhiteSpace(preferredFormat)
-            ? DefaultPreferredFormat
-            : preferredFormat!;
-
-        var resolvedFormat = ResolvePreferredFormat(formatValue);
-
-        var qualityValue = DefaultQuality;
-        if (!string.IsNullOrWhiteSpace(quality) && int.TryParse(quality, out var parsedQuality))
-        {
-            qualityValue = Math.Clamp(parsedQuality, 1, 100);
-        }
+            SettingDefaults.MediaEnableOptimisation);
+        var quality = await settingService.GetMediaQualityAsync();
 
         return new MediaOptimizationSettings
         {
-            MaxDimensions = string.IsNullOrWhiteSpace(maxDimensions) ? $"{DefaultMaxWidth}x{DefaultMaxHeight}" : maxDimensions,
-            PreferredFormat = resolvedFormat,
+            MaxDimensions = maxDimensions,
+            PreferredFormat = preferredFormat,
             EnableOptimisation = enableOptimisation,
-            Quality = qualityValue,
+            Quality = quality,
         };
     }
 
@@ -127,7 +104,7 @@ public class MediaOptimizationService : IMediaOptimizationService
                 targetFormat = image.Format;
             }
 
-            var (maxWidth, maxHeight) = MediaSizeHelper.ParseSize(settings.MaxDimensions, DefaultMaxWidth, DefaultMaxHeight);
+            var (maxWidth, maxHeight) = MediaSizeHelper.ParseSize(settings.MaxDimensions, SettingDefaults.MediaMaxWidth, SettingDefaults.MediaMaxHeight);
             ApplyResize(image, maxWidth, maxHeight);
             EnsureTransparencyPreserved(image, targetFormat);
             image.Strip();
@@ -204,35 +181,9 @@ public class MediaOptimizationService : IMediaOptimizationService
             || format == MagickFormat.Tiff;
     }
 
-    private static string ResolvePreferredFormat(string value)
-    {
-        var supported = MagickNET.SupportedFormats
-            .Where(format => format.SupportsWriting)
-            .Select(format => format.Format.ToString().ToLowerInvariant())
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        var normalized = value.Trim();
-        if (normalized.Length > 0 && normalized[0] == '.')
-        {
-            normalized = normalized.Substring(1);
-        }
-
-        if (string.IsNullOrWhiteSpace(normalized) || !supported.Contains(normalized))
-        {
-            return DefaultPreferredFormat;
-        }
-
-        return normalized;
-    }
-
     private static MagickFormat ResolveMagickFormat(string format)
     {
-        var supported = MagickNET.SupportedFormats
-            .Where(item => item.SupportsWriting)
-            .Select(item => item.Format)
-            .ToHashSet();
-
-        if (Enum.TryParse<MagickFormat>(format, true, out var magickFormat) && supported.Contains(magickFormat))
+        if (Enum.TryParse<MagickFormat>(format, true, out var magickFormat) && MediaSettingsHelper.WritableFormats.Contains(magickFormat))
         {
             return magickFormat;
         }

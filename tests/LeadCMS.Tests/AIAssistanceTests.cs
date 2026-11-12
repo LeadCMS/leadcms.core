@@ -61,6 +61,56 @@ public class AIAssistanceTests : BaseTestAutoLogin
     }
 
     [Fact]
+    public async Task CoverImageGenerationEndpoint_WithoutCoverDimensions_LetsProviderPickSizeAndDoesNotCrop()
+    {
+        await SetSystemSettingAsync(SettingKeys.MediaEnableOptimisation, "false");
+        await SetSystemSettingAsync(SettingKeys.MediaMaxDimensions, "5000x5000");
+
+        var request = new CoverImageGenerationRequest
+        {
+            ContentTitle = "Cover Without Dimensions",
+            ContentDescription = "Cover generation when no cover dimensions are configured.",
+            ContentSlug = "blog/cover-without-dimensions",
+        };
+
+        var response = await PostTest<MediaDetailsDto>("/api/content/ai-cover", request, HttpStatusCode.OK);
+
+        var lastRequest = TestAIProviderService.GetLastImageRequest();
+        lastRequest.Should().NotBeNull();
+        lastRequest!.Width.Should().BeNull();
+        lastRequest.Height.Should().BeNull();
+
+        using var original = new MagickImage(LoadEmbeddedResource("cover-sample.png"));
+        response!.Width.Should().Be((int)original.Width);
+        response.Height.Should().Be((int)original.Height);
+    }
+
+    [Fact]
+    public async Task CoverImageGenerationEndpoint_WithCoverDimensions_CropsEvenWhenUploadCoverResizeDisabled()
+    {
+        // Media.EnableCoverResize only applies to uploads; AI covers follow the configured dimensions.
+        await SetSystemSettingAsync(SettingKeys.MediaEnableOptimisation, "false");
+        await SetSystemSettingAsync(SettingKeys.MediaMaxDimensions, "5000x5000");
+        await SetSystemSettingAsync(SettingKeys.MediaCoverDimensions, "300x150");
+        await SetSystemSettingAsync(SettingKeys.MediaEnableCoverResize, "false");
+
+        var request = new CoverImageGenerationRequest
+        {
+            ContentTitle = "Cover With Dimensions",
+            ContentDescription = "Cover generation with configured cover dimensions.",
+            ContentSlug = "blog/cover-with-dimensions",
+        };
+
+        var response = await PostTest<MediaDetailsDto>("/api/content/ai-cover", request, HttpStatusCode.OK);
+
+        var lastRequest = TestAIProviderService.GetLastImageRequest();
+        lastRequest!.Width.Should().Be(300);
+        lastRequest.Height.Should().Be(150);
+        response!.Width.Should().Be(300);
+        response.Height.Should().Be(150);
+    }
+
+    [Fact]
     public async Task CoverImageGenerationEndpoint_ShouldCreateNewCoverVersion()
     {
         await SetSystemSettingAsync(SettingKeys.MediaEnableOptimisation, "false");

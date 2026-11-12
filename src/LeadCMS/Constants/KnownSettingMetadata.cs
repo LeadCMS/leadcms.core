@@ -54,7 +54,7 @@ public static class KnownSettingMetadata
         new(SettingKeys.MediaMaxFileSize, false, SettingValueTypes.Int, "Maximum media file size in KB."),
         new(SettingKeys.MediaEnableOptimisation, false, SettingValueTypes.Bool, "Enable media optimization pipeline."),
         new(SettingKeys.MediaQuality, false, SettingValueTypes.Int, "Default output quality for optimized media."),
-        new(SettingKeys.MediaEnableCoverResize, false, SettingValueTypes.Bool, "Enable cover image resize to configured cover dimensions."),
+        new(SettingKeys.MediaEnableCoverResize, false, SettingValueTypes.Bool, "Resize uploaded cover images to the configured cover dimensions. AI-generated covers always follow the configured dimensions."),
 
         new("ApiSettings.MaxListSize", false, SettingValueTypes.Int, "Maximum number of records returned by list endpoints."),
         new("ApiSettings.DefaultFromEmail", false, SettingValueTypes.Text, "Default sender email address used for system-generated emails."),
@@ -74,13 +74,14 @@ public static class KnownSettingMetadata
         new(AiSettingKeys.BlogCoverInstructions, false, SettingValueTypes.TextArea, "Additional instructions for AI-generated blog cover images."),
         new(AiSettingKeys.EmailTemplateInstructions, false, SettingValueTypes.TextArea, "Additional instructions for AI-generated email templates."),
 
-        new("LeadCapture.Email.Enabled", false, SettingValueTypes.Bool, "Whether email notifications are enabled for lead capture.", "false"),
-        new("LeadCapture.Email.Recipients", false, SettingValueTypes.EmailArray, "Array of email addresses to send lead notifications to.", "[]"),
-        new("LeadCapture.Telegram.Enabled", false, SettingValueTypes.Bool, "Whether Telegram notifications are enabled for lead capture.", "false"),
-        new("LeadCapture.Telegram.BotId", true, SettingValueTypes.Text, "The Telegram bot ID for sending lead notifications.", string.Empty),
-        new("LeadCapture.Telegram.ChatId", true, SettingValueTypes.Text, "The Telegram chat ID to send lead notifications to.", string.Empty),
-        new("LeadCapture.Slack.Enabled", false, SettingValueTypes.Bool, "Whether Slack notifications are enabled for lead capture.", "false"),
-        new("LeadCapture.Slack.WebhookUrl", true, SettingValueTypes.Text, "The Slack incoming webhook URL for sending lead notifications.", string.Empty),
+        // Owned by the Site plugin: metadata only, defaults come from the plugin definitions which take precedence.
+        new("LeadCapture.Email.Enabled", false, SettingValueTypes.Bool, "Whether email notifications are enabled for lead capture."),
+        new("LeadCapture.Email.Recipients", false, SettingValueTypes.EmailArray, "Array of email addresses to send lead notifications to."),
+        new("LeadCapture.Telegram.Enabled", false, SettingValueTypes.Bool, "Whether Telegram notifications are enabled for lead capture."),
+        new("LeadCapture.Telegram.BotId", true, SettingValueTypes.Text, "The Telegram bot ID for sending lead notifications."),
+        new("LeadCapture.Telegram.ChatId", true, SettingValueTypes.Text, "The Telegram chat ID to send lead notifications to."),
+        new("LeadCapture.Slack.Enabled", false, SettingValueTypes.Bool, "Whether Slack notifications are enabled for lead capture."),
+        new("LeadCapture.Slack.WebhookUrl", true, SettingValueTypes.Text, "The Slack incoming webhook URL for sending lead notifications."),
     }.AsReadOnly();
 
     public static bool TryGet(string key, out SettingMetadataDefinition definition)

@@ -2031,20 +2031,14 @@ public class MediaController : ControllerBase
         }
 
         // Check if cover resize is enabled
-        var enableCoverResizeSetting = await settingService.GetSettingWithFallbackAsync(
-            SettingKeys.MediaEnableCoverResize,
-            ConfigurationPaths.GetConfigurationPath(SettingKeys.MediaEnableCoverResize));
-        var enableCoverResize = string.IsNullOrEmpty(enableCoverResizeSetting) ||
-            (bool.TryParse(enableCoverResizeSetting, out var enabled) && enabled);
+        var enableCoverResize = await settingService.IsCoverResizeEnabledAsync();
 
         if (!enableCoverResize)
         {
             return new CoverResizeResult(data);
         }
 
-        var coverDimensions = await settingService.GetSettingWithFallbackAsync(
-            SettingKeys.MediaCoverDimensions,
-            ConfigurationPaths.GetConfigurationPath(SettingKeys.MediaCoverDimensions));
+        var coverDimensions = await settingService.GetCoverDimensionsAsync();
         var (targetWidth, targetHeight) = MediaSizeHelper.ParseSize(coverDimensions);
 
         if (!targetWidth.HasValue || !targetHeight.HasValue || targetWidth <= 0 || targetHeight <= 0)

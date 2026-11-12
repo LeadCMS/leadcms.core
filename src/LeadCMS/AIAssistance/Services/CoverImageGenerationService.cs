@@ -639,9 +639,12 @@ public class CoverImageGenerationService : ICoverImageGenerationService
             : requirements;
     }
 
-    private async Task<string?> GetCoverImageSizeAsync()
+    /// <summary>
+    /// Returns the configured cover size, or an empty string (the provider then picks its own size and nothing is cropped).
+    /// </summary>
+    private Task<string> GetCoverImageSizeAsync()
     {
-        return await settingService.GetSystemSettingAsync(SettingKeys.MediaCoverDimensions);
+        return settingService.GetCoverDimensionsAsync();
     }
 
     private async Task<Media> SaveToMediaAsync(string scopeUid, string? title, byte[] imageData, string? baseName)

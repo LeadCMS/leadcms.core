@@ -2,6 +2,8 @@
 // Licensed under the MIT license. See LICENSE file in the samples root for full license information.
 // </copyright>
 
+using LeadCMS.Constants;
+
 namespace LeadCMS.Interfaces;
 
 public sealed class MediaOptimizationRequest
@@ -34,9 +36,9 @@ public sealed class MediaOptimizationSettings
 
     public string PreferredFormat { get; set; } = string.Empty;
 
-    public bool EnableOptimisation { get; set; } = false;
+    public bool EnableOptimisation { get; set; } = SettingDefaults.MediaEnableOptimisation;
 
-    public int Quality { get; set; } = 75;
+    public int Quality { get; set; } = SettingDefaults.MediaQuality;
 }
 
 public interface IMediaOptimizationService

@@ -4,6 +4,7 @@
 
 using LeadCMS.Constants;
 using LeadCMS.Entities;
+using LeadCMS.Plugin.Site.Configuration;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -47,9 +48,10 @@ public class PluginSettingsRegistrationTests : BaseTestAutoLogin
         Assert.NotNull(settings);
         var settingDict = settings.ToDictionary(s => s.Key, s => s.Value);
 
-        Assert.Equal("false", settingDict["LeadCapture.Email.Enabled"]);
-        Assert.Equal("false", settingDict["LeadCapture.Telegram.Enabled"]);
-        Assert.Equal("false", settingDict["LeadCapture.Slack.Enabled"]);
+        // Reported defaults must match what LeadNotificationService applies when the setting is absent
+        Assert.Equal(SettingDefaults.ToSettingValue(LeadCaptureSettingDefaults.EmailEnabled), settingDict[LeadCaptureSettingKeys.EmailEnabled]);
+        Assert.Equal(SettingDefaults.ToSettingValue(LeadCaptureSettingDefaults.TelegramEnabled), settingDict[LeadCaptureSettingKeys.TelegramEnabled]);
+        Assert.Equal(SettingDefaults.ToSettingValue(LeadCaptureSettingDefaults.SlackEnabled), settingDict[LeadCaptureSettingKeys.SlackEnabled]);
     }
 
     [Fact]
@@ -141,13 +143,13 @@ public class PluginSettingsRegistrationTests : BaseTestAutoLogin
 
         var settings = new List<Setting>
         {
-            new Setting { Key = "LeadCapture.Email.Enabled", Value = "true" },
+            new Setting { Key = LeadCaptureSettingKeys.EmailEnabled, Value = "false" },
         };
 
         // Act
         await enrichmentService.EnrichWithAllKnownSettingsAsync(settings);
 
-        // Assert - existing value should not be overwritten
-        Assert.Equal("true", settings.First(s => s.Key == "LeadCapture.Email.Enabled").Value);
+        // Assert - existing value should not be overwritten by the "true" default
+        Assert.Equal("false", settings.First(s => s.Key == LeadCaptureSettingKeys.EmailEnabled).Value);
     }
 }

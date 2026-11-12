@@ -45,8 +45,8 @@ public class ContentDescriptionLengthAttribute : ValidationAttribute
 
     private (int minLength, int maxLength) GetMinMaxLength(ValidationContext validationContext)
     {
-        int minLength = 20; // Default min length
-        int maxLength = 155; // SEO-optimized default max length
+        int minLength = SettingDefaults.MinDescriptionLength;
+        int maxLength = SettingDefaults.MaxDescriptionLength;
 
         var settingService = validationContext.GetService(typeof(ISettingService)) as ISettingService;
         if (settingService != null)

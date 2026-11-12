@@ -13,6 +13,8 @@ namespace LeadCMS.DataAnnotations
 {
     public class MediaExtensionAttribute : ValidationAttribute
     {
+        private static int builtInLimitWarningLogged;
+
         protected override ValidationResult IsValid(object? value, ValidationContext validationContext)
         {
             var configuration = (IOptions<MediaConfig>?)validationContext!.GetService(typeof(IOptions<MediaConfig>));
@@ -40,23 +42,14 @@ namespace LeadCMS.DataAnnotations
                 throw new MissingConfigurationException("Failed to resolve ISettingService object.");
             }
 
-            var extensionSizeInfo = configuration.Value.MaxSize
+            // Resolution order: extension-specific limit, Media.Max.FileSize setting, "default" limit, built-in default.
+            // An entry with an empty MaxSize is treated as missing.
+            var maxFileSizeSetting = configuration.Value.MaxSize
                 .FirstOrDefault(info =>
                     !string.Equals(info.Extension, "default", StringComparison.OrdinalIgnoreCase)
-                    && string.Equals(info.Extension, fileExtension, StringComparison.OrdinalIgnoreCase));
+                    && string.Equals(info.Extension, fileExtension, StringComparison.OrdinalIgnoreCase))?.MaxSize;
 
-            string? maxFileSizeSetting;
-
-            if (extensionSizeInfo != null)
-            {
-                if (string.IsNullOrWhiteSpace(extensionSizeInfo.MaxSize))
-                {
-                    throw new MissingConfigurationException($"Failed to resolve Media.Max.FileSize setting for extension '{fileExtension}'.");
-                }
-
-                maxFileSizeSetting = extensionSizeInfo.MaxSize;
-            }
-            else
+            if (string.IsNullOrWhiteSpace(maxFileSizeSetting))
             {
                 maxFileSizeSetting = settingService
                     .GetSystemSettingAsync(SettingKeys.MediaMaxFileSize)
@@ -66,15 +59,21 @@ namespace LeadCMS.DataAnnotations
 
             if (string.IsNullOrWhiteSpace(maxFileSizeSetting))
             {
-                var defaultSizeInfo = configuration.Value.MaxSize
-                    .FirstOrDefault(info => string.Equals(info.Extension, "default", StringComparison.OrdinalIgnoreCase));
+                maxFileSizeSetting = configuration.Value.MaxSize
+                    .FirstOrDefault(info => string.Equals(info.Extension, "default", StringComparison.OrdinalIgnoreCase))?.MaxSize;
+            }
 
-                if (defaultSizeInfo == null || string.IsNullOrWhiteSpace(defaultSizeInfo.MaxSize))
+            if (string.IsNullOrWhiteSpace(maxFileSizeSetting))
+            {
+                if (Interlocked.Exchange(ref builtInLimitWarningLogged, 1) == 0)
                 {
-                    throw new MissingConfigurationException("Failed to resolve Media.Max.FileSize setting.");
+                    Log.Warning(
+                        "No media size limit configured for '{Extension}' (Media:MaxSize, Media.Max.FileSize); using built-in limit of {MaxFileSizeInKb} KB.",
+                        fileExtension,
+                        SettingDefaults.MediaMaxFileSizeInKb);
                 }
 
-                maxFileSizeSetting = defaultSizeInfo.MaxSize;
+                maxFileSizeSetting = SettingDefaults.MediaMaxFileSizeInKb.ToString();
             }
 
             long fileLengthAllowedSize;

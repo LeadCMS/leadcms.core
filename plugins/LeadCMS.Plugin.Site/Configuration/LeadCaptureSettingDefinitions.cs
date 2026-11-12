@@ -17,7 +17,7 @@ public static class LeadCaptureSettingDefinitions
         {
             [LeadCaptureSettingKeys.EmailEnabled] = CreateDefinition(
                 LeadCaptureSettingKeys.EmailEnabled,
-                "false",
+                SettingDefaults.ToSettingValue(LeadCaptureSettingDefaults.EmailEnabled),
                 SettingValueTypes.Bool,
                 false,
                 "Whether email notifications are enabled for lead capture."),
@@ -29,7 +29,7 @@ public static class LeadCaptureSettingDefinitions
                 "Array of email addresses to send lead notifications to."),
             [LeadCaptureSettingKeys.TelegramEnabled] = CreateDefinition(
                 LeadCaptureSettingKeys.TelegramEnabled,
-                "false",
+                SettingDefaults.ToSettingValue(LeadCaptureSettingDefaults.TelegramEnabled),
                 SettingValueTypes.Bool,
                 false,
                 "Whether Telegram notifications are enabled for lead capture."),
@@ -53,7 +53,7 @@ public static class LeadCaptureSettingDefinitions
                 "Optional Liquid template for Telegram lead notification messages. When set, overrides the default message format. Supports all lead and contact template variables."),
             [LeadCaptureSettingKeys.SlackEnabled] = CreateDefinition(
                 LeadCaptureSettingKeys.SlackEnabled,
-                "false",
+                SettingDefaults.ToSettingValue(LeadCaptureSettingDefaults.SlackEnabled),
                 SettingValueTypes.Bool,
                 false,
                 "Whether Slack notifications are enabled for lead capture."),

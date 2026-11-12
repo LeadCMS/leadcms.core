@@ -70,6 +70,22 @@ public class MediaCoverResizeTests : BaseTestAutoLogin
     }
 
     [Fact]
+    public async Task UploadCover_WithoutCoverSettings_IsNotCropped()
+    {
+        // Nothing saved for Media.Cover.Dimensions / Media.EnableCoverResize: built-in defaults apply.
+        await SetSystemSettingAsync(SettingKeys.MediaEnableOptimisation, "false");
+        await SetSystemSettingAsync(SettingKeys.MediaMaxDimensions, "5000x5000");
+
+        var imageBytes = LoadEmbeddedResource(CoverSampleFileName);
+        using var originalImage = new MagickImage(imageBytes);
+
+        var media = await UploadMediaAsync(imageBytes, CoverSampleFileName, new[] { "cover" });
+
+        media.Width.Should().Be((int)originalImage.Width);
+        media.Height.Should().Be((int)originalImage.Height);
+    }
+
+    [Fact]
     public async Task UploadWithoutCoverTag_DoesNotForceCoverDimensions()
     {
         await SetSystemSettingAsync(SettingKeys.MediaCoverDimensions, "200x100");

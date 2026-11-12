@@ -21,10 +21,7 @@ public class SettingService : ISettingService
         this.dbContext = dbContext;
         this.configuration = configuration;
 
-        settingDefinitionsByKey = settingsProviders
-            .SelectMany(p => p.GetSettingDefinitions())
-            .GroupBy(d => d.Key)
-            .Select(g => g.First())
+        settingDefinitionsByKey = SettingDefinitionHelper.Merge(settingsProviders)
             .ToDictionary(d => d.Key, d => d, StringComparer.OrdinalIgnoreCase);
     }
 

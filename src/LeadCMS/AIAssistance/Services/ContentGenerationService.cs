@@ -607,19 +607,19 @@ If the user's request is unclear or could be interpreted multiple ways:
         // Use the new convention-based method calls
         var minTitleLength = await settingService.GetIntSettingWithFallbackAsync(
             SettingKeys.MinTitleLength,
-            10); // Default minimum
+            SettingDefaults.MinTitleLength);
 
         var maxTitleLength = await settingService.GetIntSettingWithFallbackAsync(
             SettingKeys.MaxTitleLength,
-            60); // Default maximum
+            SettingDefaults.MaxTitleLength);
 
         var minDescriptionLength = await settingService.GetIntSettingWithFallbackAsync(
             SettingKeys.MinDescriptionLength,
-            20); // Default minimum
+            SettingDefaults.MinDescriptionLength);
 
         var maxDescriptionLength = await settingService.GetIntSettingWithFallbackAsync(
             SettingKeys.MaxDescriptionLength,
-            155); // Default maximum
+            SettingDefaults.MaxDescriptionLength);
 
         return (minTitleLength, maxTitleLength, minDescriptionLength, maxDescriptionLength);
     }
